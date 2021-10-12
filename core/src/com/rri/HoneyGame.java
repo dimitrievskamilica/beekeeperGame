@@ -90,12 +90,14 @@ public class HoneyGame extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // process user input
-        if (Gdx.input.isTouched()) commandTouched();    // mouse or touch screen
-        if (Gdx.input.isKeyPressed(Keys.LEFT)) commandMoveLeft();
-        if (Gdx.input.isKeyPressed(Keys.RIGHT)) commandMoveRight();
-        if (Gdx.input.isKeyPressed(Keys.A)) commandMoveLeftCorner();
-        if (Gdx.input.isKeyPressed(Keys.S)) commandMoveRightCorner();
-        if (Gdx.input.isKeyPressed(Keys.ESCAPE)) commandExitGame();
+        if(beekeeperHealth>0) {
+            if (Gdx.input.isTouched()) commandTouched();    // mouse or touch screen
+            if (Gdx.input.isKeyPressed(Keys.LEFT)) commandMoveLeft();
+            if (Gdx.input.isKeyPressed(Keys.RIGHT)) commandMoveRight();
+            if (Gdx.input.isKeyPressed(Keys.A)) commandMoveLeftCorner();
+            if (Gdx.input.isKeyPressed(Keys.S)) commandMoveRightCorner();
+            if (Gdx.input.isKeyPressed(Keys.ESCAPE)) commandExitGame();
+        }
 
         // check if we need to create a new honey/bee
         if (TimeUtils.nanoTime() - lastHoneyTime > CREATE_HONEY_TIME) spawnHoney();
@@ -167,7 +169,6 @@ public class HoneyGame extends ApplicationAdapter {
     public void dispose() {
         honeyImage.dispose();
         beeImage.dispose();
-        ;
         beekeeperImage.dispose();
         backgroundImage.dispose();
         honeySound.dispose();
@@ -202,9 +203,11 @@ public class HoneyGame extends ApplicationAdapter {
     }
 
     private void commandMoveRight() {
-        beekeeper.x += SPEED * Gdx.graphics.getDeltaTime();
-        if (beekeeper.x > Gdx.graphics.getWidth() - beekeeperImage.getWidth())
-            beekeeper.x = Gdx.graphics.getWidth() - beekeeperImage.getWidth();
+
+            beekeeper.x += SPEED * Gdx.graphics.getDeltaTime();
+            if (beekeeper.x > Gdx.graphics.getWidth() - beekeeperImage.getWidth())
+                beekeeper.x = Gdx.graphics.getWidth() - beekeeperImage.getWidth();
+
     }
 
     private void commandMoveLeftCorner() {
