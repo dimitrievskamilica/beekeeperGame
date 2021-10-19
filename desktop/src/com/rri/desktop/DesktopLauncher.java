@@ -2,7 +2,7 @@ package com.rri.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import com.rri.HoneyGame;
+import com.rriSecond.HoneyGame;
 
 public class DesktopLauncher {
     public static void main(String[] arg) {
