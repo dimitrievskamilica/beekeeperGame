@@ -102,7 +102,7 @@ public class HoneyGame extends ApplicationAdapter {
         if(!score.isEnd()) {
             for (Iterator<GameObjectDynamic> it = dynamicActors.iterator(); it.hasNext(); ) {
                 GameObjectDynamic dynamicActor = it.next();
-                dynamicActor.bounds.y -= dynamicActor.velocity.y * Gdx.graphics.getDeltaTime();
+                //dynamicActor.bounds.y -= dynamicActor.velocity.y * Gdx.graphics.getDeltaTime();
                 if (dynamicActor.bounds.y + dynamicActor.bounds.height < 0) it.remove();
                 if (dynamicActor.bounds.overlaps(beekeeper.bounds)) {
                   dynamicActor.updateScore(score);
