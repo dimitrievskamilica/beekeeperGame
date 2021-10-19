@@ -124,6 +124,7 @@ public class HoneyGame extends ApplicationAdapter {
     public void dispose() {
 
         Assets.dispose();
+        batch.dispose();
     }
 
     private void spawnHoney() {
