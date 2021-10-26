@@ -62,7 +62,7 @@ public class Bee extends GameObjectDynamic implements Pool.Poolable{
     @Override
     public void reset() {
         init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.beeImage.getWidth()), Gdx.graphics.getHeight(),Assets.beeImage.getWidth(),Assets.beeImage.getHeight());
-
+        velocity.set(0,speed);
     }
 
 

@@ -54,7 +54,7 @@ public class AntiBeeSpray extends GameObjectDynamic implements Pool.Poolable{
     @Override
     public void reset() {
         init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.powerUpImage.getWidth()), Gdx.graphics.getHeight(),Assets.powerUpImage.getWidth(),Assets.powerUpImage.getHeight());
-
+        velocity.set(0,speed);
     }
 
 }

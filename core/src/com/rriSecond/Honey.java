@@ -62,6 +62,7 @@ public class Honey extends GameObjectDynamic implements Pool.Poolable{
     @Override
     public void reset(){
         init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.honeyImage.getWidth()), Gdx.graphics.getHeight(),Assets.honeyImage.getWidth(),Assets.honeyImage.getHeight());
+        velocity.set(0,speed);
     }
     public void init(float x, float y,float width,float height) {
         super.init(x, y,width,height);
