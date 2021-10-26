@@ -48,4 +48,5 @@ public class Beekeeper extends GameObjectDynamic{
         position.x=Gdx.graphics.getWidth() - Assets.beekeeperImage.getWidth();
         bounds.x=position.x;
     }
+
 }

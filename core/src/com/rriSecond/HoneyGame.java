@@ -2,6 +2,7 @@ package com.rriSecond;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
@@ -28,16 +29,18 @@ public class HoneyGame extends ApplicationAdapter {
     private Array<GameObjectDynamic> dynamicActors;
     private Score score;
     private End end;
+    private boolean pause=false;
 
 
     @Override
     public void create() {
 
         Assets.Load();
-        Gdx.app.setLogLevel(Logger.DEBUG);
+        //Gdx.app.setLogLevel(Logger.DEBUG);
 
         score=new Score(0,0,Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),0,100);
         end=new End(0,0,Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
+        //pause=new Pause(0,0,Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -50,6 +53,7 @@ public class HoneyGame extends ApplicationAdapter {
         // add first honey and bee
         spawnHoney();
         spawnBee();
+        spawnPowerUp();
     }
 
     /**
@@ -57,63 +61,90 @@ public class HoneyGame extends ApplicationAdapter {
      */
     @Override
     public void render() {
-        // clear screen
-        Gdx.gl.glClearColor(0, 0, 0f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         camera.update();
-
-        // tell the SpriteBatch to render in the
-        // coordinate system specified by the camera
         batch.setProjectionMatrix(camera.combined);
-
-
-        // process user input
-        if(!score.isEnd()) {
+        if(score.isEnd()){
+            batch.begin();
+            {
+                end.render(batch);
+            }
+            batch.end();
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                create();
+            }
+        }else if(pause){
+            batch.begin();
+            {
+                Assets.font.setColor(Color.YELLOW);
+                Assets.font.draw(batch, "PAUSED", Gdx.graphics.getHeight() / 2f, Gdx.graphics.getHeight() / 2f);
+                Assets.backgroundSound.stop();
+            }
+            batch.end();
+            if (Gdx.input.isKeyJustPressed(Input.Keys.P)) pause = !pause;
+        }else{
             if (Gdx.input.isTouched()) commandTouched();    // mouse or touch screen
-            if (Gdx.input.isKeyPressed(Keys.LEFT)) beekeeper.commandMoveLeft();
-            if (Gdx.input.isKeyPressed(Keys.RIGHT)) beekeeper.commandMoveRight();
-            if (Gdx.input.isKeyPressed(Keys.A)) beekeeper.commandMoveLeftCorner();
-            if (Gdx.input.isKeyPressed(Keys.S)) beekeeper.commandMoveRightCorner();
-            if (Gdx.input.isKeyPressed(Keys.ESCAPE)) commandExitGame();
-        }
-        if(!score.isEnd()){
-                for (GameObjectDynamic dynamicActor : dynamicActors)
-                    dynamicActor.update(Gdx.graphics.getDeltaTime());
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) beekeeper.commandMoveLeft();
+            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) beekeeper.commandMoveRight();
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) beekeeper.commandMoveLeftCorner();
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) beekeeper.commandMoveRightCorner();
+            if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) commandExitGame();
+            if (Gdx.input.isKeyJustPressed(Input.Keys.P)) pause = !pause;
+            for (GameObjectDynamic dynamicActor : dynamicActors)
+                dynamicActor.update(Gdx.graphics.getDeltaTime());
 
             if (Honey.isItTimeForNewHoney()) spawnHoney();
             if (Bee.isItTimeForNewBee()) spawnBee();
-        }
+            if (AntiBeeSpray.isItTimeForNewAntiBeeSpray()) spawnPowerUp();
 
-        batch.begin();
-        {    // brackets added just for indent
-            batch.draw(Assets.backgroundImage, 0, 0);
-            beekeeper.render(batch);
-            for (GameObjectDynamic dynamicActor : dynamicActors) {
-                dynamicActor.render(batch);
+            batch.begin();
+            {    // brackets added just for indent
+                batch.draw(Assets.backgroundImage, 0, 0);
+                beekeeper.render(batch);
+                for (GameObjectDynamic dynamicActor : dynamicActors) {
+                    dynamicActor.render(batch);
 
+                }
+                score.render(batch);
+                Assets.font.draw(batch, "Active elements " + dynamicActors.size, 20, Gdx.graphics.getHeight() - 40);
+                Assets.font.draw(batch, "Cheeses in pool " + Honey.honeyPool.getFree(), 20, Gdx.graphics.getHeight() - 60);
             }
-            score.render(batch);
-            if(score.isEnd()){
-                end.render(batch);
-            }
-        }
-        batch.end();
-        if(!score.isEnd()) {
+            batch.end();
             for (Iterator<GameObjectDynamic> it = dynamicActors.iterator(); it.hasNext(); ) {
                 GameObjectDynamic dynamicActor = it.next();
                 //dynamicActor.bounds.y -= dynamicActor.velocity.y * Gdx.graphics.getDeltaTime();
-                if (dynamicActor.bounds.y + dynamicActor.bounds.height < 0) it.remove();
-                if (dynamicActor.bounds.overlaps(beekeeper.bounds)) {
-                  dynamicActor.updateScore(score);
-                  if(dynamicActor instanceof Honey)
+                if (dynamicActor.bounds.y + dynamicActor.bounds.height < 0) {
                     it.remove();
+                    if (dynamicActor instanceof Honey) {
+                        Honey.honeyPool.free((Honey) dynamicActor);
+                    }
+                    if (dynamicActor instanceof Bee && Score.powerUpActivated()) {
+                        Bee.beePool.free((Bee)dynamicActor);
+                    }
+                    if(dynamicActor instanceof AntiBeeSpray){
+                        AntiBeeSpray.antiBeeSprayPool.free((AntiBeeSpray) dynamicActor);
+                    }
+                }
+                if (dynamicActor.bounds.overlaps(beekeeper.bounds)) {
+                    dynamicActor.updateScore(score);
+                    if (dynamicActor instanceof Honey) {
+                        it.remove();
+                        Honey.honeyPool.free((Honey) dynamicActor);
+                    }
+                    if (dynamicActor instanceof Bee && Score.powerUpActivated()) {
+                        it.remove();
+                        Bee.beePool.free((Bee)dynamicActor);
+                    }
+                    if(dynamicActor instanceof AntiBeeSpray){
+                        it.remove();
+                        AntiBeeSpray.antiBeeSprayPool.free((AntiBeeSpray) dynamicActor);
+                    }
                     // speeds up
 
                 }
             }
 
         }
+
 
     }
 
@@ -128,13 +159,26 @@ public class HoneyGame extends ApplicationAdapter {
     }
 
     private void spawnHoney() {
-        dynamicActors.add(new Honey(Assets.honeyImage.getWidth(),Assets.honeyImage.getHeight()));
+        Honey honey = Honey.honeyPool.obtain();
+        honey.init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.honeyImage.getWidth()), Gdx.graphics.getHeight(),Assets.honeyImage.getWidth(),Assets.honeyImage.getHeight());
+        dynamicActors.add(honey);
+        //dynamicActors.add(new Honey(Assets.honeyImage.getWidth(),Assets.honeyImage.getHeight()));
         Honey.lastHoneyTime = TimeUtils.nanoTime();
     }
 
     private void spawnBee() {
-        dynamicActors.add(new Bee(Assets.beeImage.getWidth(),Assets.beeImage.getHeight()));
+        Bee bee = Bee.beePool.obtain();
+        bee.init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.beeImage.getWidth()), Gdx.graphics.getHeight(),Assets.beeImage.getWidth(),Assets.beeImage.getHeight());
+        dynamicActors.add(bee);
+       // dynamicActors.add(new Bee(Assets.beeImage.getWidth(),Assets.beeImage.getHeight()));
         Bee.lastBeeTime = TimeUtils.nanoTime();
+    }
+    private void spawnPowerUp() {
+        AntiBeeSpray antiBeeSpray = AntiBeeSpray.antiBeeSprayPool.obtain();
+        antiBeeSpray.init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.powerUpImage.getWidth()), Gdx.graphics.getHeight(),Assets.powerUpImage.getWidth(),Assets.powerUpImage.getHeight());
+        dynamicActors.add(antiBeeSpray);
+        //dynamicActors.add(new AntiBeeSpray(Assets.powerUpImage.getWidth(),Assets.powerUpImage.getHeight()));
+        AntiBeeSpray.lastAntiBeeSprayTime = TimeUtils.nanoTime();
     }
 
     private void commandTouched() {

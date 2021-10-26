@@ -4,15 +4,23 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Pool;
+import com.badlogic.gdx.utils.Pools;
 import com.badlogic.gdx.utils.TimeUtils;
 
-public class Honey extends GameObjectDynamic{
+public class Honey extends GameObjectDynamic implements Pool.Poolable{
 
     public static float speed=200;
     public static final long CREATE_HONEY_TIME = 1000000000;
     public static long lastHoneyTime;
     public float rotate;
     public float rotateSpeed=200;
+    public static final Pool<Honey> honeyPool = Pools.get(Honey.class, 20);
+
+    public Honey(){
+        super();
+    velocity.set(0,speed);
+    }
 
     public Honey(float width,float height) {
 
@@ -50,6 +58,13 @@ public class Honey extends GameObjectDynamic{
         if (score.honeyCollectedScore % 10 == 0) Bee.speed+=66;
         System.out.printf("%f%n", Bee.speed);
 
+    }
+    @Override
+    public void reset(){
+        init(MathUtils.random(0, Gdx.graphics.getWidth() - Assets.honeyImage.getWidth()), Gdx.graphics.getHeight(),Assets.honeyImage.getWidth(),Assets.honeyImage.getHeight());
+    }
+    public void init(float x, float y,float width,float height) {
+        super.init(x, y,width,height);
     }
 
 }

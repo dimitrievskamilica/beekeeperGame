@@ -10,6 +10,7 @@ public class Assets {
     public static Texture beekeeperImage;
     public static Texture beeImage;
     public static Texture backgroundImage;
+    public static Texture powerUpImage;
     public static Sound honeySound;
     public static Sound backgroundSound;
     public static BitmapFont font;
@@ -21,6 +22,7 @@ public class Assets {
         honeySound = Gdx.audio.newSound(Gdx.files.internal("collect.wav"));
         backgroundImage = new Texture(Gdx.files.internal("bg.png"));
         backgroundSound = Gdx.audio.newSound(Gdx.files.internal("backgroundMusic.wav"));
+        powerUpImage=new Texture(Gdx.files.internal("powerUp.png"));
         font = new BitmapFont();
         font.getData().setScale(2);
     }
@@ -29,6 +31,7 @@ public class Assets {
         honeyImage.dispose();
         beekeeperImage.dispose();
         honeySound.dispose();
+        powerUpImage.dispose();
         backgroundImage.dispose();
         backgroundSound.dispose();
         font.dispose();
