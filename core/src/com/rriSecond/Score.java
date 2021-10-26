@@ -16,6 +16,7 @@ public class Score extends GameObject{
         this.beekeeperHealth=beekeeperHealth;
 
     }
+
     @Override
     public void render(SpriteBatch batch) {
         Assets.font.setColor(Color.YELLOW);

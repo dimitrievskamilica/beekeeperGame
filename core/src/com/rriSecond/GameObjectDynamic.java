@@ -27,5 +27,6 @@ abstract public class GameObjectDynamic extends GameObject {
         this.bounds.y=y;
 
     }
+    abstract public void updateScore(Score score);
 
 }

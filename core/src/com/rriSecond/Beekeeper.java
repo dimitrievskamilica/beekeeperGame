@@ -49,4 +49,8 @@ public class Beekeeper extends GameObjectDynamic{
         bounds.x=position.x;
     }
 
+    @Override
+    public void updateScore(Score score) {
+
+    }
 }

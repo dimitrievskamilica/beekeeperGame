@@ -9,6 +9,7 @@ public class End extends GameObject{
     public End(float x, float y, float width, float height) {
         super(x, y, width, height);
     }
+
     @Override
     public void render(SpriteBatch batch) {
         Assets.font.setColor(Color.RED);
