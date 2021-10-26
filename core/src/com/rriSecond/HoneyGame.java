@@ -106,7 +106,7 @@ public class HoneyGame extends ApplicationAdapter {
                 }
                 score.render(batch);
                 Assets.font.draw(batch, "Active elements " + dynamicActors.size, 20, Gdx.graphics.getHeight() - 40);
-                Assets.font.draw(batch, "Cheeses in pool " + Honey.honeyPool.getFree(), 20, Gdx.graphics.getHeight() - 60);
+                Assets.font.draw(batch, "Jars of honey in pool " + Honey.honeyPool.getFree(), 20, Gdx.graphics.getHeight() - 60);
             }
             batch.end();
             for (Iterator<GameObjectDynamic> it = dynamicActors.iterator(); it.hasNext(); ) {
