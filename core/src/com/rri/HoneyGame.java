@@ -2,6 +2,7 @@ package com.rri;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
@@ -9,12 +10,16 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.Iterator;
 
@@ -45,6 +50,14 @@ public class HoneyGame extends ApplicationAdapter {
     private static final long CREATE_HONEY_TIME = 1000000000;    // ns
     private static final long CREATE_BEE_TIME = 2000000000;    // ns
 
+    // debug
+    private DebugCameraController debugCameraController;
+    private MemoryInfo memoryInfo;
+    private boolean debug = false;
+
+    private ShapeRenderer shapeRenderer;
+    public Viewport viewport;
+
     @Override
     public void create() {
         font = new BitmapFont();
@@ -64,6 +77,14 @@ public class HoneyGame extends ApplicationAdapter {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch = new SpriteBatch();
+
+        // debug
+        debugCameraController = new DebugCameraController();
+        debugCameraController.setStartPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
+        memoryInfo = new MemoryInfo(500);
+
+        shapeRenderer = new ShapeRenderer();
+        viewport = new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera);
 
         // create a Rectangle to logically represents the beekeeper
         beekeeper = new Rectangle();
@@ -89,6 +110,13 @@ public class HoneyGame extends ApplicationAdapter {
         Gdx.gl.glClearColor(0, 0, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) debug = !debug;
+
+        if (debug) {
+            debugCameraController.handleDebugInput(Gdx.graphics.getDeltaTime());
+            memoryInfo.update();
+        }
+
         // process user input
         if(beekeeperHealth>0) {
             if (Gdx.input.isTouched()) commandTouched();    // mouse or touch screen
@@ -107,20 +135,20 @@ public class HoneyGame extends ApplicationAdapter {
             // move and remove any that are beneath the bottom edge of
             // the screen or that hit the beekeeper
             for (Iterator<Rectangle> it = bees.iterator(); it.hasNext(); ) {
-                Rectangle asteroid = it.next();
-                asteroid.y -= SPEED_BEE * Gdx.graphics.getDeltaTime();
-                if (asteroid.y + beeImage.getHeight() < 0) it.remove();
-                if (asteroid.overlaps(beekeeper)) {
+                Rectangle bee = it.next();
+                bee.y -= SPEED_BEE * Gdx.graphics.getDeltaTime();
+                if (bee.y + beeImage.getHeight() < 0) it.remove();
+                if (bee.overlaps(beekeeper)) {
                     honeySound.play();
                     beekeeperHealth--;
                 }
             }
 
             for (Iterator<Rectangle> it = jarsOfHoney.iterator(); it.hasNext(); ) {
-                Rectangle astronaut = it.next();
-                astronaut.y -= SPEED_HONEY * Gdx.graphics.getDeltaTime();
-                if (astronaut.y + honeyImage.getHeight() < 0) it.remove();    // from screen
-                if (astronaut.overlaps(beekeeper)) {
+                Rectangle jarOfHoney = it.next();
+                jarOfHoney.y -= SPEED_HONEY * Gdx.graphics.getDeltaTime();
+                if (jarOfHoney.y + honeyImage.getHeight() < 0) it.remove();    // from screen
+                if (jarOfHoney.overlaps(beekeeper)) {
                     honeySound.play();
                     honeyCollectedScore++;
                     if (honeyCollectedScore % 10 == 0) SPEED_BEE += 66;    // speeds up
@@ -160,6 +188,42 @@ public class HoneyGame extends ApplicationAdapter {
             font.draw(batch, "" + beekeeperHealth, 20, Gdx.graphics.getHeight() - 20);
         }
         batch.end();
+        if (debug) {
+            debugCameraController.applyTo(camera);
+            batch.begin();
+            {
+                // the average number of frames per second
+                GlyphLayout layout = new GlyphLayout(font, "FPS:" + Gdx.graphics.getFramesPerSecond());
+                font.setColor(Color.YELLOW);
+                font.draw(batch, layout, Gdx.graphics.getWidth() - layout.width, Gdx.graphics.getHeight() - 50);
+
+                // number of rendering calls, ever; will not be reset unless set manually
+                font.setColor(Color.YELLOW);
+                font.draw(batch, "RC:" + batch.totalRenderCalls, Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() - 20);
+
+                memoryInfo.render(batch, font);
+            }
+            batch.end();
+
+            batch.totalRenderCalls = 0;
+            ViewportUtils.drawGrid(viewport, shapeRenderer, 50);
+
+            // print rectangles
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            // https://libgdx.badlogicgames.com/ci/nightlies/docs/api/com/badlogic/gdx/graphics/glutils/ShapeRenderer.html
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            {
+                shapeRenderer.setColor(1, 1, 0, 1);
+                for (Rectangle bee : bees) {
+                    shapeRenderer.rect(bee.x, bee.y, beeImage.getWidth(), beeImage.getHeight());
+                }
+                for (Rectangle jarOfHoney : jarsOfHoney) {
+                    shapeRenderer.rect(jarOfHoney.x, jarOfHoney.y, honeyImage.getWidth(), honeyImage.getHeight());
+                }
+                shapeRenderer.rect(beekeeper.x, beekeeper.y, beekeeperImage.getWidth(), beekeeperImage.getHeight());
+            }
+            shapeRenderer.end();
+        }
     }
 
     /**
