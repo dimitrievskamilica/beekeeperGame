@@ -10,13 +10,20 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import com.rri.DebugCameraController;
+import com.rri.MemoryInfo;
+import com.rri.ViewportUtils;
 
 import java.util.Iterator;
 
@@ -30,6 +37,13 @@ public class HoneyGame extends ApplicationAdapter {
     private Score score;
     private End end;
     private boolean pause=false;
+    // debug
+    private DebugCameraController debugCameraController;
+    private MemoryInfo memoryInfo;
+    private boolean debug = false;
+
+    private ShapeRenderer shapeRenderer;
+    public Viewport viewport;
 
 
     @Override
@@ -45,6 +59,14 @@ public class HoneyGame extends ApplicationAdapter {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch = new SpriteBatch();
+        // debug
+        debugCameraController = new DebugCameraController();
+        debugCameraController.setStartPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
+        memoryInfo = new MemoryInfo(500);
+
+        shapeRenderer = new ShapeRenderer();
+        viewport = new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera);
+
 
         // create a Rectangle to logically represents the beekeeper
         beekeeper = new Beekeeper(Assets.beekeeperImage.getWidth(),Assets.beekeeperImage.getHeight());
@@ -61,8 +83,16 @@ public class HoneyGame extends ApplicationAdapter {
      */
     @Override
     public void render() {
+        Gdx.gl.glClearColor(0, 0, 0f, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) debug = !debug;
+
+        if (debug) {
+            debugCameraController.handleDebugInput(Gdx.graphics.getDeltaTime());
+            memoryInfo.update();
+        }
         if(score.isEnd()){
             batch.begin();
             {
@@ -141,6 +171,54 @@ public class HoneyGame extends ApplicationAdapter {
                     // speeds up
 
                 }
+            }
+            if (debug) {
+                debugCameraController.applyTo(camera);
+                batch.begin();
+                {
+                    // the average number of frames per second
+                    GlyphLayout layout = new GlyphLayout(Assets.font, "FPS:" + Gdx.graphics.getFramesPerSecond());
+                    Assets.font.setColor(Color.YELLOW);
+                    Assets.font.draw(batch, layout, Gdx.graphics.getWidth() - layout.width, Gdx.graphics.getHeight() - 50);
+
+                    // number of rendering calls, ever; will not be reset unless set manually
+                    Assets.font.setColor(Color.YELLOW);
+                    Assets.font.draw(batch, "RC:" + batch.totalRenderCalls, Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() - 20);
+
+                    memoryInfo.render(batch, Assets.font);
+                }
+                batch.end();
+
+                batch.totalRenderCalls = 0;
+                ViewportUtils.drawGrid(viewport, shapeRenderer, 50);
+
+                // print rectangles
+                shapeRenderer.setProjectionMatrix(camera.combined);
+                // https://libgdx.badlogicgames.com/ci/nightlies/docs/api/com/badlogic/gdx/graphics/glutils/ShapeRenderer.html
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+                {
+                    shapeRenderer.setColor(1, 1, 0, 1);
+                    /*for (Rectangle bee : bees) {
+                        shapeRenderer.rect(bee.x, bee.y, beeImage.getWidth(), beeImage.getHeight());
+                    }
+                    for (Rectangle jarOfHoney : jarsOfHoney) {
+                        shapeRenderer.rect(jarOfHoney.x, jarOfHoney.y, honeyImage.getWidth(), honeyImage.getHeight());
+                    }*/
+                    for(GameObjectDynamic actor: dynamicActors){
+                        if(actor instanceof Bee) {
+                            shapeRenderer.rect(actor.bounds.x, actor.bounds.y, Assets.beeImage.getWidth(), Assets.beeImage.getHeight());
+                        }
+                        if(actor instanceof Honey){
+                            shapeRenderer.rect(actor.bounds.x, actor.bounds.y, Assets.honeyImage.getWidth(), Assets.honeyImage.getHeight());
+                        }
+                        if(actor instanceof AntiBeeSpray){
+                            shapeRenderer.rect(actor.bounds.x, actor.bounds.y, Assets.powerUpImage.getWidth(), Assets.powerUpImage.getHeight());
+                        }
+                    }
+                    shapeRenderer.rect(beekeeper.bounds.x, beekeeper.bounds.y, Assets.beekeeperImage.getWidth(), Assets.beekeeperImage.getHeight());
+
+                }
+                shapeRenderer.end();
             }
 
         }

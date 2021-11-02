@@ -20,6 +20,11 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.rriSecond.AntiBeeSpray;
+import com.rriSecond.Assets;
+import com.rriSecond.Bee;
+import com.rriSecond.GameObjectDynamic;
+import com.rriSecond.Honey;
 
 import java.util.Iterator;
 
@@ -48,15 +53,21 @@ public class HoneyGame extends ApplicationAdapter {
     private static final int SPEED_HONEY = 200; // pixels per second
     private static int SPEED_BEE = 100;    // pixels per second
     private static final long CREATE_HONEY_TIME = 1000000000;    // ns
-    private static final long CREATE_BEE_TIME = 2000000000;    // ns
+    private static final long CREATE_BEE_TIME = 2000000000;// ns
 
     // debug
     private DebugCameraController debugCameraController;
     private MemoryInfo memoryInfo;
     private boolean debug = false;
 
-    private ShapeRenderer shapeRenderer;
+    private ShapeRenderer renderer;
     public Viewport viewport;
+
+    private Viewport hudViewport;
+
+    // world units
+    private static final float WORLD_WIDTH = 600f;
+    private static final float WORLD_HEIGHT = 300f;
 
     @Override
     public void create() {
@@ -79,16 +90,20 @@ public class HoneyGame extends ApplicationAdapter {
         batch = new SpriteBatch();
 
         // debug
-        debugCameraController = new DebugCameraController();
-        debugCameraController.setStartPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
         memoryInfo = new MemoryInfo(500);
+        viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
+        hudViewport = new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        shapeRenderer = new ShapeRenderer();
-        viewport = new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera);
+
+        debugCameraController = new DebugCameraController();
+        debugCameraController.setStartPosition(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f);
+
+        renderer = new ShapeRenderer();
+
 
         // create a Rectangle to logically represents the beekeeper
         beekeeper = new Rectangle();
-        beekeeper.x = Gdx.graphics.getWidth() / 2f - beekeeperImage.getWidth() / 2f;    // center the beekeeper horizontally
+        beekeeper.x = WORLD_WIDTH / 2f - beekeeperImage.getWidth() / 2f;
         beekeeper.y = 20;    // bottom left corner of the rocket is 20 pixels above the bottom screen edge
         beekeeper.width = beekeeperImage.getWidth();
         beekeeper.height = beekeeperImage.getHeight();
@@ -118,7 +133,7 @@ public class HoneyGame extends ApplicationAdapter {
         }
 
         // process user input
-        if(beekeeperHealth>0) {
+        if (beekeeperHealth > 0) {
             if (Gdx.input.isTouched()) commandTouched();    // mouse or touch screen
             if (Gdx.input.isKeyPressed(Keys.LEFT)) commandMoveLeft();
             if (Gdx.input.isKeyPressed(Keys.RIGHT)) commandMoveRight();
@@ -159,14 +174,14 @@ public class HoneyGame extends ApplicationAdapter {
             batch.begin();
             {
                 font.setColor(Color.RED);
-                font.draw(batch, "The END", Gdx.graphics.getHeight() / 2f, Gdx.graphics.getHeight() / 2f);
+                font.draw(batch, "The END", WORLD_HEIGHT / 2f, WORLD_WIDTH / 2f);
             }
             batch.end();
         }
 
         // tell the camera to update its matrices.
         camera.update();
-
+        viewport.apply();
         // tell the SpriteBatch to render in the
         // coordinate system specified by the camera
         batch.setProjectionMatrix(camera.combined);
@@ -174,7 +189,7 @@ public class HoneyGame extends ApplicationAdapter {
         // begin a new batch and draw the beekeeper, jarsOfHoney, bees
         batch.begin();
         {    // brackets added just for indent
-            batch.draw(backgroundImage,0,0);
+            batch.draw(backgroundImage, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
             batch.draw(beekeeperImage, beekeeper.x, beekeeper.y);
             for (Rectangle bee : bees) {
                 batch.draw(beeImage, bee.x, bee.y);
@@ -183,16 +198,19 @@ public class HoneyGame extends ApplicationAdapter {
                 batch.draw(honeyImage, jarOfHoney.x, jarOfHoney.y);
             }
             font.setColor(Color.YELLOW);
-            font.draw(batch, "" + honeyCollectedScore, Gdx.graphics.getWidth() - 50, Gdx.graphics.getHeight() - 20);
+            font.draw(batch, "" + honeyCollectedScore, WORLD_WIDTH - 50, WORLD_HEIGHT - 20);
             font.setColor(Color.GREEN);
-            font.draw(batch, "" + beekeeperHealth, 20, Gdx.graphics.getHeight() - 20);
+            font.draw(batch, "" + beekeeperHealth, WORLD_WIDTH - 70, WORLD_HEIGHT - 50);
         }
         batch.end();
         if (debug) {
             debugCameraController.applyTo(camera);
+
+            hudViewport.apply();
+            batch.setProjectionMatrix(hudViewport.getCamera().combined);
             batch.begin();
             {
-                // the average number of frames per second
+                draw();
                 GlyphLayout layout = new GlyphLayout(font, "FPS:" + Gdx.graphics.getFramesPerSecond());
                 font.setColor(Color.YELLOW);
                 font.draw(batch, layout, Gdx.graphics.getWidth() - layout.width, Gdx.graphics.getHeight() - 50);
@@ -204,25 +222,23 @@ public class HoneyGame extends ApplicationAdapter {
                 memoryInfo.render(batch, font);
             }
             batch.end();
-
             batch.totalRenderCalls = 0;
-            ViewportUtils.drawGrid(viewport, shapeRenderer, 50);
-
-            // print rectangles
-            shapeRenderer.setProjectionMatrix(camera.combined);
+            ViewportUtils.drawGrid(viewport, renderer, 50);
+            renderer.setProjectionMatrix(camera.combined);
             // https://libgdx.badlogicgames.com/ci/nightlies/docs/api/com/badlogic/gdx/graphics/glutils/ShapeRenderer.html
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            renderer.begin(ShapeRenderer.ShapeType.Line);
             {
-                shapeRenderer.setColor(1, 1, 0, 1);
-                for (Rectangle bee : bees) {
-                    shapeRenderer.rect(bee.x, bee.y, beeImage.getWidth(), beeImage.getHeight());
-                }
-                for (Rectangle jarOfHoney : jarsOfHoney) {
-                    shapeRenderer.rect(jarOfHoney.x, jarOfHoney.y, honeyImage.getWidth(), honeyImage.getHeight());
-                }
-                shapeRenderer.rect(beekeeper.x, beekeeper.y, beekeeperImage.getWidth(), beekeeperImage.getHeight());
+                renderer.setColor(1, 1, 0, 1);
+                    for (Rectangle bee : bees) {
+                        renderer.rect(bee.x, bee.y, beeImage.getWidth(), beeImage.getHeight());
+                    }
+                    for (Rectangle jarOfHoney : jarsOfHoney) {
+                        renderer.rect(jarOfHoney.x, jarOfHoney.y, honeyImage.getWidth(), honeyImage.getHeight());
+                    }
+                renderer.rect(beekeeper.x, beekeeper.y, beekeeperImage.getWidth(), beekeeperImage.getHeight());
+
             }
-            shapeRenderer.end();
+            renderer.end();
         }
     }
 
@@ -243,8 +259,8 @@ public class HoneyGame extends ApplicationAdapter {
 
     private void spawnHoney() {
         Rectangle honey = new Rectangle();
-        honey.x = MathUtils.random(0, Gdx.graphics.getWidth() - honeyImage.getWidth());
-        honey.y = Gdx.graphics.getHeight();
+        honey.x = MathUtils.random(0, WORLD_WIDTH - honeyImage.getWidth());
+        honey.y = WORLD_HEIGHT;
         honey.width = honeyImage.getWidth();
         honey.height = honeyImage.getHeight();
         jarsOfHoney.add(honey);
@@ -253,8 +269,8 @@ public class HoneyGame extends ApplicationAdapter {
 
     private void spawnBee() {
         Rectangle bee = new Rectangle();
-        bee.x = MathUtils.random(0, Gdx.graphics.getWidth() - honeyImage.getWidth());
-        bee.y = Gdx.graphics.getHeight();
+        bee.x = MathUtils.random(0, WORLD_WIDTH - honeyImage.getWidth());
+        bee.y = WORLD_HEIGHT;
         bee.width = beeImage.getWidth();
         bee.height = beeImage.getHeight();
         bees.add(bee);
@@ -268,9 +284,9 @@ public class HoneyGame extends ApplicationAdapter {
 
     private void commandMoveRight() {
 
-            beekeeper.x += SPEED * Gdx.graphics.getDeltaTime();
-            if (beekeeper.x > Gdx.graphics.getWidth() - beekeeperImage.getWidth())
-                beekeeper.x = Gdx.graphics.getWidth() - beekeeperImage.getWidth();
+        beekeeper.x += SPEED * Gdx.graphics.getDeltaTime();
+        if (beekeeper.x > WORLD_WIDTH - beekeeperImage.getWidth())
+            beekeeper.x = WORLD_WIDTH - beekeeperImage.getWidth();
 
     }
 
@@ -279,7 +295,7 @@ public class HoneyGame extends ApplicationAdapter {
     }
 
     private void commandMoveRightCorner() {
-        beekeeper.x = Gdx.graphics.getWidth() - beekeeperImage.getWidth();
+        beekeeper.x = WORLD_WIDTH - beekeeperImage.getWidth();
     }
 
     private void commandTouched() {
@@ -292,4 +308,39 @@ public class HoneyGame extends ApplicationAdapter {
     private void commandExitGame() {
         Gdx.app.exit();
     }
+
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        hudViewport.update(width, height, true);
+        ViewportUtils.debugPixelsPerUnit(viewport);
+    }
+
+    private void draw() {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+        float worldWidth = viewport.getWorldWidth();
+        float worldHeight = viewport.getWorldHeight();
+
+        String screenSize = "Screen/Window size: " + screenWidth + " x " + screenHeight + " px";
+        String worldSize = "World size: " + (int) worldWidth + " x " + (int) worldHeight + " world units";
+        String oneWorldUnit = "One world unit: " + (screenWidth / worldWidth) + " x " + (screenHeight / worldHeight) + " px";
+
+
+        font.draw(batch,
+                screenSize,
+                20f,
+                hudViewport.getWorldHeight() - 20f);
+
+        font.draw(batch,
+                worldSize,
+                20f,
+                hudViewport.getWorldHeight() - 50f);
+
+        font.draw(batch,
+                oneWorldUnit,
+                20f,
+                hudViewport.getWorldHeight() - 80f);
+    }
+
 }
