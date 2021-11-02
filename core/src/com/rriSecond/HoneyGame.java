@@ -128,7 +128,7 @@ public class HoneyGame extends ApplicationAdapter {
 
             batch.begin();
             {    // brackets added just for indent
-                batch.draw(Assets.backgroundImage, 0, 0);
+                batch.draw(Assets.backgroundImage, 0, 0,Gdx.graphics.getWidth(),Gdx.graphics.getHeight() );
                 beekeeper.render(batch);
                 for (GameObjectDynamic dynamicActor : dynamicActors) {
                     dynamicActor.render(batch);
