@@ -251,6 +251,8 @@ public class HoneyGame extends ApplicationAdapter {
 
         Assets.dispose();
         batch.dispose();
+        beeEffect.dispose();
+        sparkle.dispose();
     }
 
     private void spawnHoney() {
