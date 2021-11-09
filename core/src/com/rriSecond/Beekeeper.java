@@ -25,7 +25,7 @@ public class Beekeeper extends GameObjectDynamic{
         if (bounds.x < 0)
             bounds.x=0;
         position.x=bounds.x;
-        HoneyGame.beeEffect.setPosition(bounds.x+20, bounds.y+40);
+        Assets.beeEffect.setPosition(bounds.x+20, bounds.y+40);
 
 
     }
@@ -36,7 +36,7 @@ public class Beekeeper extends GameObjectDynamic{
         if (bounds.x > Gdx.graphics.getWidth() - Assets.beekeeperImage.getWidth())
             bounds.x= Gdx.graphics.getWidth() - Assets.beekeeperImage.getWidth();
         position.x=bounds.x;
-        HoneyGame.beeEffect.setPosition(bounds.x+20, bounds.y+40);
+        Assets.beeEffect.setPosition(bounds.x+20, bounds.y+40);
 
     }
 
@@ -44,13 +44,13 @@ public class Beekeeper extends GameObjectDynamic{
 
         position.x=0;
         bounds.x=0;
-        HoneyGame.beeEffect.setPosition(bounds.x+20, bounds.y+40);
+        Assets.beeEffect.setPosition(bounds.x+20, bounds.y+40);
     }
 
     public void commandMoveRightCorner() {
         position.x=Gdx.graphics.getWidth() - Assets.beekeeperImage.getWidth();
         bounds.x=position.x;
-        HoneyGame.beeEffect.setPosition(bounds.x+20, bounds.y+40);
+       Assets.beeEffect.setPosition(bounds.x+20, bounds.y+40);
     }
 
     @Override

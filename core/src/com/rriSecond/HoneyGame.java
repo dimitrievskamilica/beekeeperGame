@@ -45,8 +45,8 @@ public class HoneyGame extends ApplicationAdapter {
 
     private ShapeRenderer shapeRenderer;
     public Viewport viewport;
-    public ParticleEffect sparkle;
-    public static ParticleEffect beeEffect;
+    //public ParticleEffect sparkle;
+    //public static ParticleEffect beeEffect;
     public int sec=50;
 
 
@@ -77,7 +77,7 @@ public class HoneyGame extends ApplicationAdapter {
         dynamicActors= new Array<>();
         Assets.backgroundSound.play();
         // add first honey and bee
-        initParticleEffects();
+        Assets.beeEffect.setPosition(beekeeper.bounds.x+20,beekeeper.bounds.y+40);
         spawnHoney();
         spawnBee();
         spawnPowerUp();
@@ -126,12 +126,12 @@ public class HoneyGame extends ApplicationAdapter {
             if (Gdx.input.isKeyJustPressed(Input.Keys.P)) pause = !pause;
             for (GameObjectDynamic dynamicActor : dynamicActors) {
                 dynamicActor.update(Gdx.graphics.getDeltaTime());
-                sparkle.update(Gdx.graphics.getDeltaTime());
-                beeEffect.update(Gdx.graphics.getDeltaTime());
-                if(sparkle.isComplete())
-                    sparkle.reset();
-                if(beeEffect.isComplete())
-                    beeEffect.reset();
+                Assets.sparkle.update(Gdx.graphics.getDeltaTime());
+                Assets.beeEffect.update(Gdx.graphics.getDeltaTime());
+                if(Assets.sparkle.isComplete())
+                    Assets.sparkle.reset();
+                if(Assets.beeEffect.isComplete())
+                    Assets.beeEffect.reset();
             }
 
             if (Honey.isItTimeForNewHoney()) spawnHoney();
@@ -151,10 +151,10 @@ public class HoneyGame extends ApplicationAdapter {
                 Assets.font.draw(batch, "Jars of honey in pool " + Honey.honeyPool.getFree(), 20, Gdx.graphics.getHeight() - 60);
                 //if(sparkle.)
                 if(sec<50) {
-                    sparkle.draw(batch);
+                    Assets.sparkle.draw(batch);
                     sec++;
                 }
-                beeEffect.draw(batch);
+                Assets.beeEffect.draw(batch);
             }
             batch.end();
             for (Iterator<GameObjectDynamic> it = dynamicActors.iterator(); it.hasNext(); ) {
@@ -175,7 +175,7 @@ public class HoneyGame extends ApplicationAdapter {
                 if (dynamicActor.bounds.overlaps(beekeeper.bounds)) {
                     dynamicActor.updateScore(score);
                     if (dynamicActor instanceof Honey) {
-                        sparkle.setPosition(dynamicActor.bounds.x,dynamicActor.bounds.y);
+                        Assets.sparkle.setPosition(dynamicActor.bounds.x,dynamicActor.bounds.y);
                         sec=0;
                         it.remove();
                         Honey.honeyPool.free((Honey) dynamicActor);
@@ -186,7 +186,7 @@ public class HoneyGame extends ApplicationAdapter {
                         Bee.beePool.free((Bee)dynamicActor);
                     }
                     if(dynamicActor instanceof AntiBeeSpray){
-                        sparkle.setPosition(dynamicActor.bounds.x,dynamicActor.bounds.y);
+                        Assets.sparkle.setPosition(dynamicActor.bounds.x,dynamicActor.bounds.y);
                         sec=0;
                         it.remove();
                         AntiBeeSpray.antiBeeSprayPool.free((AntiBeeSpray) dynamicActor);
@@ -251,8 +251,7 @@ public class HoneyGame extends ApplicationAdapter {
 
         Assets.dispose();
         batch.dispose();
-        beeEffect.dispose();
-        sparkle.dispose();
+
     }
 
     private void spawnHoney() {
@@ -284,18 +283,11 @@ public class HoneyGame extends ApplicationAdapter {
         camera.unproject(touchPos);
         beekeeper.bounds.x=touchPos.x - Assets.beekeeperImage.getWidth() / 2f;
         beekeeper.position.x=beekeeper.bounds.x;
-        beeEffect.setPosition(beekeeper.bounds.x+20,beekeeper.bounds.y+40);
+        Assets.beeEffect.setPosition(beekeeper.bounds.x+20,beekeeper.bounds.y+40);
     }
 
     private void commandExitGame() {
         Gdx.app.exit();
     }
-    private void initParticleEffects() {
-        sparkle = new ParticleEffect();
-        sparkle.load(Gdx.files.internal("sparkle.pe"), Gdx.files.internal(("")));
-        beeEffect = new ParticleEffect();
-        beeEffect.load(Gdx.files.internal("beeEffect.pe"), Gdx.files.internal(("")));
-        beeEffect.setPosition(beekeeper.bounds.x+20,beekeeper.bounds.y+40);
 
-    }
 }
