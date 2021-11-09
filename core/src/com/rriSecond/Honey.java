@@ -49,6 +49,7 @@ public class Honey extends GameObjectDynamic implements Pool.Poolable{
         if (rotate>360) rotate -= 360; //prevent high numbers
         if (rotate<-360) rotate += 360;
 
+
     }
     @Override
     public void updateScore(Score score){

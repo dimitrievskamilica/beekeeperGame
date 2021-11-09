@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
@@ -44,6 +45,9 @@ public class HoneyGame extends ApplicationAdapter {
 
     private ShapeRenderer shapeRenderer;
     public Viewport viewport;
+    public ParticleEffect sparkle;
+    public static ParticleEffect beeEffect;
+    public int sec=50;
 
 
     @Override
@@ -73,6 +77,7 @@ public class HoneyGame extends ApplicationAdapter {
         dynamicActors= new Array<>();
         Assets.backgroundSound.play();
         // add first honey and bee
+        initParticleEffects();
         spawnHoney();
         spawnBee();
         spawnPowerUp();
@@ -119,8 +124,15 @@ public class HoneyGame extends ApplicationAdapter {
             if (Gdx.input.isKeyPressed(Input.Keys.S)) beekeeper.commandMoveRightCorner();
             if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) commandExitGame();
             if (Gdx.input.isKeyJustPressed(Input.Keys.P)) pause = !pause;
-            for (GameObjectDynamic dynamicActor : dynamicActors)
+            for (GameObjectDynamic dynamicActor : dynamicActors) {
                 dynamicActor.update(Gdx.graphics.getDeltaTime());
+                sparkle.update(Gdx.graphics.getDeltaTime());
+                beeEffect.update(Gdx.graphics.getDeltaTime());
+                if(sparkle.isComplete())
+                    sparkle.reset();
+                if(beeEffect.isComplete())
+                    beeEffect.reset();
+            }
 
             if (Honey.isItTimeForNewHoney()) spawnHoney();
             if (Bee.isItTimeForNewBee()) spawnBee();
@@ -137,6 +149,12 @@ public class HoneyGame extends ApplicationAdapter {
                 score.render(batch);
                 Assets.font.draw(batch, "Active elements " + dynamicActors.size, 20, Gdx.graphics.getHeight() - 40);
                 Assets.font.draw(batch, "Jars of honey in pool " + Honey.honeyPool.getFree(), 20, Gdx.graphics.getHeight() - 60);
+                //if(sparkle.)
+                if(sec<50) {
+                    sparkle.draw(batch);
+                    sec++;
+                }
+                beeEffect.draw(batch);
             }
             batch.end();
             for (Iterator<GameObjectDynamic> it = dynamicActors.iterator(); it.hasNext(); ) {
@@ -157,14 +175,19 @@ public class HoneyGame extends ApplicationAdapter {
                 if (dynamicActor.bounds.overlaps(beekeeper.bounds)) {
                     dynamicActor.updateScore(score);
                     if (dynamicActor instanceof Honey) {
+                        sparkle.setPosition(dynamicActor.bounds.x,dynamicActor.bounds.y);
+                        sec=0;
                         it.remove();
                         Honey.honeyPool.free((Honey) dynamicActor);
+
                     }
                     if (dynamicActor instanceof Bee && Score.powerUpActivated()) {
                         it.remove();
                         Bee.beePool.free((Bee)dynamicActor);
                     }
                     if(dynamicActor instanceof AntiBeeSpray){
+                        sparkle.setPosition(dynamicActor.bounds.x,dynamicActor.bounds.y);
+                        sec=0;
                         it.remove();
                         AntiBeeSpray.antiBeeSprayPool.free((AntiBeeSpray) dynamicActor);
                     }
@@ -198,12 +221,6 @@ public class HoneyGame extends ApplicationAdapter {
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
                 {
                     shapeRenderer.setColor(1, 1, 0, 1);
-                    /*for (Rectangle bee : bees) {
-                        shapeRenderer.rect(bee.x, bee.y, beeImage.getWidth(), beeImage.getHeight());
-                    }
-                    for (Rectangle jarOfHoney : jarsOfHoney) {
-                        shapeRenderer.rect(jarOfHoney.x, jarOfHoney.y, honeyImage.getWidth(), honeyImage.getHeight());
-                    }*/
                     for(GameObjectDynamic actor: dynamicActors){
                         if(actor instanceof Bee) {
                             shapeRenderer.rect(actor.bounds.x, actor.bounds.y, Assets.beeImage.getWidth(), Assets.beeImage.getHeight());
@@ -265,10 +282,18 @@ public class HoneyGame extends ApplicationAdapter {
         camera.unproject(touchPos);
         beekeeper.bounds.x=touchPos.x - Assets.beekeeperImage.getWidth() / 2f;
         beekeeper.position.x=beekeeper.bounds.x;
-
+        beeEffect.setPosition(beekeeper.bounds.x+20,beekeeper.bounds.y+40);
     }
 
     private void commandExitGame() {
         Gdx.app.exit();
+    }
+    private void initParticleEffects() {
+        sparkle = new ParticleEffect();
+        sparkle.load(Gdx.files.internal("sparkle.pe"), Gdx.files.internal(("")));
+        beeEffect = new ParticleEffect();
+        beeEffect.load(Gdx.files.internal("beeEffect.pe"), Gdx.files.internal(("")));
+        beeEffect.setPosition(beekeeper.bounds.x+20,beekeeper.bounds.y+40);
+
     }
 }
